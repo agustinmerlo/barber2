@@ -5,10 +5,10 @@ const API_URL = "http://localhost:8000/api";
 const Pagos = () => {
   const [reservas, setReservas] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filtro, setFiltro] = useState("pendientes"); // pendientes, pagadas, todas
+  const [filtro, setFiltro] = useState("pendientes");
   const [modalAbierto, setModalAbierto] = useState(false);
   const [reservaSeleccionada, setReservaSeleccionada] = useState(null);
-  const [tipoPago, setTipoPago] = useState("seña"); // seña o saldo
+  const [tipoPago, setTipoPago] = useState("seña");
   const [montoPago, setMontoPago] = useState("");
   const [metodoPago, setMetodoPago] = useState("efectivo");
   const [guardando, setGuardando] = useState(false);
@@ -25,9 +25,7 @@ const Pagos = () => {
       const data = await res.json();
       const todasReservas = Array.isArray(data) ? data : data?.results ?? [];
       
-      // Agregar cálculo de montos
       const reservasConPagos = todasReservas.map(reserva => {
-        // Convertir a número y redondear a 2 decimales
         const total = parseFloat(reserva.total || 0);
         const seña = parseFloat(reserva.seña || 0);
         const saldoPagado = parseFloat(reserva.saldo_pagado || 0);
@@ -55,12 +53,9 @@ const Pagos = () => {
     setReservaSeleccionada(reserva);
     setTipoPago(tipo);
     
-    // Sugerir monto según el tipo de pago
     if (tipo === "seña") {
-      // Sugerir 30% del total como seña
       setMontoPago(Math.round(reserva.total * 0.3).toString());
     } else {
-      // Sugerir el saldo pendiente
       setMontoPago(reserva.pendiente.toString());
     }
     
@@ -72,6 +67,35 @@ const Pagos = () => {
     setReservaSeleccionada(null);
     setMontoPago("");
     setMetodoPago("efectivo");
+  };
+
+  const registrarMovimientoCaja = async (monto, descripcion, metodoPago) => {
+    try {
+      const movimiento = {
+        tipo: "ingreso",
+        monto: parseFloat(monto),
+        descripcion: descripcion,
+        metodo_pago: metodoPago,
+        categoria: "servicios",
+        fecha: new Date().toISOString().split('T')[0]
+      };
+
+      const res = await fetch(`${API_URL}/caja/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(movimiento)
+      });
+
+      if (!res.ok) {
+        const errorData = await res.text();
+        throw new Error(`Error en caja: ${res.status} - ${errorData}`);
+      }
+
+      return await res.json();
+    } catch (err) {
+      console.error("Error registrando en caja:", err);
+      throw err;
+    }
   };
 
   const registrarPago = async () => {
@@ -92,6 +116,7 @@ const Pagos = () => {
 
     setGuardando(true);
     try {
+      // 1. Actualizar la reserva
       const campo = tipoPago === "seña" ? "seña" : "saldo_pagado";
       const nuevoValor = tipoPago === "seña" 
         ? reservaSeleccionada.seña + monto
@@ -111,7 +136,14 @@ const Pagos = () => {
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      alert(`${tipoPago === "seña" ? "Seña" : "Saldo"} registrado exitosamente`);
+      // 2. Registrar en caja
+      const descripcionCaja = tipoPago === "seña" 
+        ? `Seña - ${reservaSeleccionada.nombre_cliente} ${reservaSeleccionada.apellido_cliente}`
+        : `Pago saldo - ${reservaSeleccionada.nombre_cliente} ${reservaSeleccionada.apellido_cliente}`;
+      
+      await registrarMovimientoCaja(monto, descripcionCaja, metodoPago);
+
+      alert(`${tipoPago === "seña" ? "Seña" : "Saldo"} registrado exitosamente en reserva y caja`);
       cerrarModal();
       cargarReservas();
     } catch (err) {
@@ -167,7 +199,6 @@ const Pagos = () => {
     }
   };
 
-  // Estadísticas
   const totalRecaudado = parseFloat(reservas.reduce((sum, r) => {
     return sum + parseFloat(r.seña || 0) + parseFloat(r.saldo_pagado || 0);
   }, 0).toFixed(2));
@@ -502,6 +533,19 @@ const Pagos = () => {
           color: #fff;
         }
 
+        .alert-info {
+          background: rgba(33, 150, 243, 0.1);
+          border: 1px solid #2196f3;
+          border-radius: 8px;
+          padding: 12px;
+          margin-bottom: 20px;
+          color: #64b5f6;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
         .modal-footer {
           padding: 24px;
           border-top: 1px solid #333;
@@ -724,6 +768,10 @@ const Pagos = () => {
             </div>
 
             <div className="modal-body">
+              <div className="alert-info">
+                ℹ️ Este pago se registrará automáticamente en la caja como ingreso
+              </div>
+
               <div className="info-box">
                 <div className="info-item">
                   <span>Cliente:</span>

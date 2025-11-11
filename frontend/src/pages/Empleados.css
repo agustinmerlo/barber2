@@ -31,14 +31,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: 1.5rem;
   flex-wrap: wrap;
-}
-
-.empleados-header .left {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
 }
 
 .empleados-header h1 {
@@ -46,6 +40,7 @@
   font-size: 1.8rem;
   margin: 0;
   font-weight: 700;
+  flex: 1;
 }
 
 .back-btn {
@@ -389,10 +384,6 @@
   .empleados-header {
     flex-direction: column;
     align-items: flex-start;
-  }
-  
-  .empleados-header .left {
-    width: 100%;
   }
   
   .input.search {

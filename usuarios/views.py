@@ -2,6 +2,7 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -122,15 +123,28 @@ class UserDetailView(APIView):
 
 
 # -------------------------------------------------------------------
-# 4️⃣ VIEWSET EMPLEADOS (ADMIN)
+# 4️⃣ VIEWSET EMPLEADOS (ADMIN) - ✅ FILTRADO CORREGIDO
 # -------------------------------------------------------------------
 class EmpleadoViewSet(viewsets.ModelViewSet):
     """
     Gestión de usuarios y roles (solo Admin).
+    ✅ Ahora filtra solo admin y barberos.
     """
-    queryset = User.objects.all().select_related('profile').order_by('-date_joined')
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def get_queryset(self):
+        """
+        Devuelve solo usuarios con rol 'admin' o 'barbero':
+        - Superusers/staff (son admin efectivo)
+        - Usuarios con profile.role = 'admin' o 'barbero'
+        """
+        return User.objects.filter(
+            Q(is_superuser=True) |  # Superusers son admin
+            Q(is_staff=True) |      # Staff son admin
+            Q(profile__role='admin') |  # Profile admin
+            Q(profile__role='barbero')  # Profile barbero
+        ).select_related('profile').distinct().order_by('-date_joined')
 
     def get_serializer_class(self):
         if self.action == 'list':

@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'servicios',
     'barbers',
     'reservas',
+    'caja',
     'proveedores',
     'usuarios.apps.UsuariosConfig',                     
 ]
@@ -89,9 +90,9 @@ WSGI_APPLICATION = 'django_crud_api.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'barber_clase_v2',
+        'NAME': 'barber_clase_v',
         'USER': 'root',
-        'PASSWORD': '12345678',
+        'PASSWORD': '1agustin7',
         'HOST': 'localhost',
         'PORT': '3306',
     }

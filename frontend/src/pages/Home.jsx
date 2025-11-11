@@ -5,12 +5,14 @@ import Perfil from "./Perfil";
 import ReservasPendientes from "./ReservasPendientes";
 import Agenda from "./Agenda";
 import Pagos from "./Pagos";
+import MovimientosCaja from "./MovimientosCaja";
 
 const API_URL = "http://localhost:8000/api";
 
 const sections = [
   { name: "Inicio", icon: "🏠" },
   { name: "Pagos", icon: "💰" },
+  { name: "Caja", icon: "💵" },
   { name: "Barberos", icon: "✂️" },
   { name: "Servicios", icon: "🧴" },
   { name: "Proveedores", icon: "📦" },
@@ -326,6 +328,8 @@ const Home = () => {
           <ReservasPendientes />
         ) : activeSection === "Pagos" ? (
           <Pagos />
+        ) : activeSection === "Caja" ? (
+          <MovimientosCaja />
         ) : activeSection === "Agenda" ? (
           <Agenda />
         ) : activeSection === "Perfil" ? (

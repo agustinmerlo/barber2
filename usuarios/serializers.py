@@ -15,25 +15,65 @@ class UserSerializer(serializers.ModelSerializer):
     Serializer completo del usuario con perfil
     """
     profile = UserProfileSerializer(read_only=True)
-    role = serializers.CharField(source='profile.role', read_only=True)
+    role = serializers.SerializerMethodField()
     
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'is_active', 'date_joined', 'profile', 'role']
         read_only_fields = ['id', 'date_joined']
+    
+    def get_role(self, obj):
+        """
+        Devuelve el rol efectivo:
+        - superuser/staff → 'admin'
+        - si no, profile.role (o 'cliente' por defecto)
+        """
+        if obj.is_superuser or obj.is_staff:
+            return 'admin'
+        return getattr(getattr(obj, 'profile', None), 'role', 'cliente')
 
 
 class UserListSerializer(serializers.ModelSerializer):
     """
-    Serializer simplificado para listar usuarios
+    Serializer simplificado para listar usuarios con rol efectivo
     """
-    role = serializers.CharField(source='profile.role', read_only=True)
-    role_display = serializers.CharField(source='profile.get_role_display', read_only=True)
-    activo = serializers.BooleanField(source='profile.activo', read_only=True)
+    role = serializers.SerializerMethodField()
+    role_display = serializers.SerializerMethodField()
+    activo = serializers.SerializerMethodField()
     
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'is_active', 'role', 'role_display', 'activo', 'date_joined']
+    
+    def get_role(self, obj):
+        """
+        Devuelve el rol efectivo:
+        - superuser/staff → 'admin'
+        - si no, profile.role (o 'cliente' por defecto)
+        """
+        if obj.is_superuser or obj.is_staff:
+            return 'admin'
+        return getattr(getattr(obj, 'profile', None), 'role', 'cliente')
+    
+    def get_role_display(self, obj):
+        """
+        Devuelve el nombre display del rol
+        """
+        role = self.get_role(obj)
+        display_map = {
+            'admin': 'Administrador',
+            'barbero': 'Barbero',
+            'cliente': 'Cliente'
+        }
+        return display_map.get(role, 'Cliente')
+    
+    def get_activo(self, obj):
+        """
+        Devuelve si el usuario está activo
+        """
+        if hasattr(obj, 'profile'):
+            return obj.profile.activo
+        return obj.is_active
 
 
 class UserRoleUpdateSerializer(serializers.Serializer):

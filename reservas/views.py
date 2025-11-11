@@ -278,7 +278,7 @@ Barberia Clase V'''
 # 🆕 LISTAR RESERVAS DEL CLIENTE (para el panel del cliente)
 # ==========================================
 @api_view(['GET'])
-@permission_classes([AllowAny])  # puedes cambiar a IsAuthenticated si lo prefieres
+@permission_classes([AllowAny])
 def listar_reservas_cliente(request):
     """
     GET /api/reservas/cliente/?estado=...&email=...
@@ -320,7 +320,7 @@ def listar_reservas_cliente(request):
 # 🆕 CONTADORES PARA EL PANEL DEL CLIENTE
 # ==========================================
 @api_view(['GET'])
-@permission_classes([AllowAny])  # puedes cambiar a IsAuthenticated si lo prefieres
+@permission_classes([AllowAny])
 def reservas_cliente_contadores(request):
     """
     GET /api/reservas/cliente/contadores/?email=...
@@ -375,35 +375,27 @@ def listar_reservas(request):
 
 
 # ==========================================
-# OBTENER UNA RESERVA ESPECÍFICA
+# 🆕 OBTENER/ACTUALIZAR RESERVA (GET/PATCH/PUT)
 # ==========================================
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def obtener_reserva(request, reserva_id):
-    try:
-        reserva = Reserva.objects.get(id=reserva_id)
-        serializer = ReservaSerializer(reserva)
-        return Response(serializer.data, status=200)
-    except Reserva.DoesNotExist:
-        return Response({'error': 'Reserva no encontrada'}, status=404)
-
-
-# ==========================================
-# 🆕 ACTUALIZAR RESERVA (PATCH/PUT)
-# ==========================================
-@api_view(['PATCH', 'PUT'])
+@api_view(['GET', 'PATCH', 'PUT'])
 @permission_classes([AllowAny])
 def actualizar_reserva(request, reserva_id):
     """
-    PATCH/PUT /api/reservas/<id>/
-    Actualiza campos específicos de una reserva (seña, saldo_pagado, metodo_pago, etc.)
+    GET /api/reservas/<id>/     → Obtener detalles de la reserva
+    PATCH /api/reservas/<id>/   → Actualizar campos específicos (seña, saldo_pagado, etc.)
+    PUT /api/reservas/<id>/     → Actualizar todos los campos
     """
     try:
         reserva = Reserva.objects.get(id=reserva_id)
     except Reserva.DoesNotExist:
         return Response({'error': 'Reserva no encontrada'}, status=404)
 
-    # Usar partial=True para permitir actualizaciones parciales (PATCH)
+    # Si es GET, solo devolver los datos
+    if request.method == 'GET':
+        serializer = ReservaSerializer(reserva)
+        return Response(serializer.data, status=200)
+
+    # Si es PATCH o PUT, actualizar
     serializer = ReservaSerializer(
         reserva, 
         data=request.data, 
